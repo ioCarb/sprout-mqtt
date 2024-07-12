@@ -8,6 +8,7 @@ require (
 	github.com/agiledragon/gomonkey/v2 v2.11.0
 	github.com/blocto/solana-go-sdk v1.26.0
 	github.com/cockroachdb/pebble v1.1.0
+	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/ethereum/go-ethereum v1.13.4
 	github.com/fatih/color v1.16.0
 	github.com/gin-gonic/gin v1.9.1
@@ -206,3 +207,5 @@ require (
 )
 
 replace github.com/ethereum/go-ethereum => github.com/ethereum/go-ethereum v1.12.0
+
+replace github.com/machinefi/sprout => github.com/ioCarb/sprout v0.0.0
