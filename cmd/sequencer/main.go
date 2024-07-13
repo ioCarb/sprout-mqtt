@@ -13,7 +13,7 @@ import (
 	"github.com/machinefi/ioconnect-go/pkg/ioconnect"
 	"github.com/pkg/errors"
 
-	//"github.com/machinefi/sprout/clients"
+	"github.com/machinefi/sprout/clients"
 	"github.com/machinefi/sprout/cmd/sequencer/api"
 	"github.com/machinefi/sprout/cmd/sequencer/persistence"
 )
@@ -23,6 +23,7 @@ var (
 	aggregationAmount               uint
 	address                         string
 	broker                          string
+	mqttTopic                       string
 	coordinatorAddr                 string
 	databaseDSN                     string
 	privateKey                      string
@@ -41,6 +42,7 @@ func init() {
 	flag.StringVar(&address, "address", ":9000", "http listen address")
 	flag.StringVar(&coordinatorAddr, "coordinatorAddress", "localhost:9001", "coordinator address")
 	flag.StringVar(&broker, "mqttBroker", "mqtt://dev.w3bstream.com:1883", "MQTT broker address")
+	flag.StringVar(&mqttTopic, "mqttTopic", "device/messages", "MQTT topic")
 	flag.StringVar(&databaseDSN, "databaseDSN", "postgres://test_user:test_passwd@localhost:5432/test?sslmode=disable", "database dsn")
 	flag.StringVar(&privateKey, "privateKey", "dbfe03b0406549232b8dccc04be8224fcc0afa300a33d4f335dcfdfead861c85", "sequencer private key")
 	flag.StringVar(&jwkSecret, "jwkSecret", "R3QNJihYLjtcaxALSTsKe1cYSX0pS28wZitFVXE4Y2klf2hxVCczYHw2dVg4fXJdSgdCcnM4PgV1aTo9DwYqEw==", "jwk secret base64 string")
@@ -79,25 +81,25 @@ func main() {
 
 	slog.Info("sequencer public key", "public_key", hexutil.Encode(crypto.FromECDSAPub(&sk.PublicKey)))
 
-	/*clientMgr, err := clients.NewManager(projectClientContractAddress, ioIDRegistryContractAddress, w3bstreamProjectContractAddress, ioIDRegistryEndpoint, chainEndpoint)
+	clientMgr, err := clients.NewManager(projectClientContractAddress, ioIDRegistryContractAddress, w3bstreamProjectContractAddress, ioIDRegistryEndpoint, chainEndpoint)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to new clients manager"))
-	}*/
+	}
 
 	p, err := persistence.NewPersistence(databaseDSN)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	/*go func() {
+	go func() {
 		if err := api.NewHttpServer(p, aggregationAmount, coordinatorAddr, sk, jwk, clientMgr).Run(address); err != nil {
 			log.Fatal(err)
 		}
-	}()*/
+	}()
 
 	// Start MQTT server
-	mqttServer := api.NewMqttServer(p, aggregationAmount, coordinatorAddr, sk, broker)
-	go mqttServer.Run(broker)
+	mqttServer := api.NewMqttServer(p, aggregationAmount, coordinatorAddr, sk, broker, clientMgr)
+	go mqttServer.Run(mqttTopic)
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)

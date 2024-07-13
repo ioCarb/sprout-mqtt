@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/machinefi/sprout/apitypes"
+	"github.com/machinefi/sprout/clients"
 	"github.com/machinefi/sprout/cmd/sequencer/persistence"
 )
 
@@ -19,9 +20,10 @@ type mqttServer struct {
 	coordinatorAddress string
 	aggregationAmount  uint
 	privateKey         *ecdsa.PrivateKey
+	clients            *clients.Manager
 }
 
-func NewMqttServer(p *persistence.Persistence, aggregationAmount uint, coordinatorAddress string, sk *ecdsa.PrivateKey, broker string) *mqttServer {
+func NewMqttServer(p *persistence.Persistence, aggregationAmount uint, coordinatorAddress string, sk *ecdsa.PrivateKey, broker string, clientMgr *clients.Manager) *mqttServer {
 	opts := mqtt.NewClientOptions().AddBroker(broker)
 	client := mqtt.NewClient(opts)
 
@@ -34,6 +36,7 @@ func NewMqttServer(p *persistence.Persistence, aggregationAmount uint, coordinat
 		coordinatorAddress: coordinatorAddress,
 		aggregationAmount:  aggregationAmount,
 		privateKey:         sk,
+		clients:            clientMgr,
 	}
 }
 
@@ -48,14 +51,29 @@ func (s *mqttServer) Run(topic string) {
 
 // TODO implement verifyToken
 
-// TODO add DID query
-
-// TODO verify project permission when querying state log
-
 func (s *mqttServer) messageHandler(client mqtt.Client, msg mqtt.Message) {
-	req := &apitypes.HandleMessageReq{}
+	req := &apitypes.HandleMessageReqMqtt{}
 	if err := json.Unmarshal(msg.Payload(), req); err != nil {
 		log.Fatal("Failed to unmarshal message payload", "error", err)
+		return
+	}
+
+	// Fetch client info
+	clientID := req.ClientID
+	if clintInfo := s.clients.ClientByIoID(clientID); clintInfo == nil {
+		slog.Error("Client not found", "clientID", clientID)
+		return
+	}
+
+	// Validate project permission
+	hasPermission, err := s.clients.HasProjectPermission(clientID, req.ProjectID)
+	if err != nil {
+		slog.Error("Failed to check project permission", "error", err)
+		return
+	}
+
+	if !hasPermission {
+		slog.Error("Client does not have permission to project", "clientID", clientID, "projectID", req.ProjectID)
 		return
 	}
 
@@ -64,6 +82,7 @@ func (s *mqttServer) messageHandler(client mqtt.Client, msg mqtt.Message) {
 		MessageID:      id,
 		ProjectID:      req.ProjectID,
 		ProjectVersion: req.ProjectVersion,
+		ClientID:       clientID,
 		Data:           []byte(req.Data),
 	}
 
