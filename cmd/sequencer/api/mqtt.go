@@ -3,7 +3,9 @@ package api
 import (
 	"crypto/ecdsa"
 	"encoding/json"
-	"log"
+
+	//"log"
+	"fmt"
 	"log/slog"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -43,7 +45,7 @@ func NewMqttServer(p *persistence.Persistence, aggregationAmount uint, coordinat
 // Subscribe only to a topic for messages for now
 func (s *mqttServer) Run(topic string) {
 	if token := s.client.Subscribe(topic, 0, s.messageHandler); token.Wait() && token.Error() != nil {
-		log.Fatal("Failed to subscribe to topic", "error", token.Error())
+		slog.Error("Failed to subscribe to topic", "error", token.Error())
 	}
 }
 
@@ -54,26 +56,26 @@ func (s *mqttServer) Run(topic string) {
 func (s *mqttServer) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	req := &apitypes.HandleMessageReqMqtt{}
 	if err := json.Unmarshal(msg.Payload(), req); err != nil {
-		log.Fatal("Failed to unmarshal message payload", "error", err)
+		slog.Error("Failed to unmarshal message payload", "error", err)
 		return
 	}
 
-	// Fetch client info
-	clientID := req.ClientID
-	if clintInfo := s.clients.ClientByIoID(clientID); clintInfo == nil {
-		slog.Error("Client not found", "clientID", clientID)
+	// Fetch client info from pool, if not found, fetch from SC
+	clientInfo := s.clients.ClientByIoID(req.ClientID)
+	if clientInfo == nil {
+		slog.Error("Client not found", "clientID", req.ClientID)
 		return
 	}
 
 	// Validate project permission
-	hasPermission, err := s.clients.HasProjectPermission(clientID, req.ProjectID)
+	hasPermission, err := s.clients.HasProjectPermission(clientInfo.DID(), req.ProjectID)
 	if err != nil {
 		slog.Error("Failed to check project permission", "error", err)
 		return
 	}
 
 	if !hasPermission {
-		slog.Error("Client does not have permission to project", "clientID", clientID, "projectID", req.ProjectID)
+		slog.Error("Client does not have permission to project", "clientID", req.ClientID, "projectID", req.ProjectID)
 		return
 	}
 
@@ -82,7 +84,7 @@ func (s *mqttServer) messageHandler(client mqtt.Client, msg mqtt.Message) {
 		MessageID:      id,
 		ProjectID:      req.ProjectID,
 		ProjectVersion: req.ProjectVersion,
-		ClientID:       clientID,
+		ClientID:       req.ClientID,
 		Data:           []byte(req.Data),
 	}
 
@@ -92,4 +94,17 @@ func (s *mqttServer) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	}
 
 	slog.Info("Message saved successfully", "messageID", id)
+
+	response := &apitypes.HandleMessageRsp{MessageID: id}
+	responseTopic := fmt.Sprintf("response/%s", req.ClientID)
+
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		slog.Error("Failed to marshal response", "error", err)
+		return
+	}
+
+	if token := s.client.Publish(responseTopic, 0, false, responseBytes); token.Wait() && token.Error() != nil {
+		slog.Error("Failed to publish response", "error", token.Error())
+	}
 }

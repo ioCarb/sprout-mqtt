@@ -10,7 +10,10 @@ services:
       - "8000:8000"
 
   sequencer:
-    image: ghcr.io/machinefi/sequencer:v0.12.1
+    #image: ghcr.io/machinefi/sequencer:v0.12.1
+    build: 
+      context: .
+      dockerfile: sequencer.Dockerfile
     depends_on:
       - "postgres"
       - "coordinator"
@@ -19,7 +22,7 @@ services:
     restart: always
     ports:
       - "9000:9000"
-    command: [ "-coordinatorAddress", "coordinator:9001", "-databaseDSN", "postgres://test_user:test_passwd@postgres:5432/test?sslmode=disable" ]
+    command: [ "-coordinatorAddress", "coordinator:9001", "-databaseDSN", "postgres://test_user:test_passwd@postgres:5432/test?sslmode=disable", "-broker", "mqtt://dev.w3bstream.com:1883" ]
 
   coordinator:
     image: ghcr.io/machinefi/coordinator:v0.12.1
