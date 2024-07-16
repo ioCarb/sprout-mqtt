@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	//"log"
-	"fmt"
+
 	"log/slog"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -54,14 +54,14 @@ func (s *mqttServer) Run(topic string) {
 // TODO implement verifyToken
 
 func (s *mqttServer) messageHandler(client mqtt.Client, msg mqtt.Message) {
-	req := &apitypes.HandleMessageReqMqtt{}
+	req := &apitypes.HandleMessageReq{}
 	if err := json.Unmarshal(msg.Payload(), req); err != nil {
 		slog.Error("Failed to unmarshal message payload", "error", err)
 		return
 	}
 
 	// Fetch client info from pool, if not found, fetch from SC
-	clientInfo := s.clients.ClientByIoID(req.ClientID)
+	/*clientInfo := s.clients.ClientByIoID(req.ClientID)
 	if clientInfo == nil {
 		slog.Error("Client not found", "clientID", req.ClientID)
 		return
@@ -77,15 +77,15 @@ func (s *mqttServer) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	if !hasPermission {
 		slog.Error("Client does not have permission to project", "clientID", req.ClientID, "projectID", req.ProjectID)
 		return
-	}
+	}*/
 
 	id := uuid.NewString()
 	message := &persistence.Message{
 		MessageID:      id,
 		ProjectID:      req.ProjectID,
 		ProjectVersion: req.ProjectVersion,
-		ClientID:       req.ClientID,
-		Data:           []byte(req.Data),
+		//ClientID:       req.ClientID,
+		Data: []byte(req.Data),
 	}
 
 	if err := s.p.Save(message, s.aggregationAmount, s.privateKey); err != nil {
@@ -95,7 +95,7 @@ func (s *mqttServer) messageHandler(client mqtt.Client, msg mqtt.Message) {
 
 	slog.Info("Message saved successfully", "messageID", id)
 
-	response := &apitypes.HandleMessageRsp{MessageID: id}
+	/*response := &apitypes.HandleMessageRsp{MessageID: id}
 	responseTopic := fmt.Sprintf("response/%s", req.ClientID)
 
 	responseBytes, err := json.Marshal(response)
@@ -106,5 +106,5 @@ func (s *mqttServer) messageHandler(client mqtt.Client, msg mqtt.Message) {
 
 	if token := s.client.Publish(responseTopic, 0, false, responseBytes); token.Wait() && token.Error() != nil {
 		slog.Error("Failed to publish response", "error", token.Error())
-	}
+	}*/
 }

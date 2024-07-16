@@ -10,7 +10,6 @@ services:
       - "8000:8000"
 
   sequencer:
-    #image: ghcr.io/machinefi/sequencer:v0.12.1
     build: 
       context: .
       dockerfile: sequencer.Dockerfile
@@ -25,7 +24,10 @@ services:
     command: [ "-coordinatorAddress", "coordinator:9001", "-databaseDSN", "postgres://test_user:test_passwd@postgres:5432/test?sslmode=disable", "-broker", "mqtt://dev.w3bstream.com:1883" ]
 
   coordinator:
-    image: ghcr.io/machinefi/coordinator:v0.12.1
+    #image: ghcr.io/machinefi/coordinator:v0.12.1
+    build: 
+      context: .
+      dockerfile: coordinator.Dockerfile
     depends_on:
       - "postgres"
       - "bootnode"
@@ -44,7 +46,9 @@ services:
       - ./test/project:/data
 
   prover:
-    image: ghcr.io/machinefi/prover:v0.12.1
+    build: 
+      context: .
+      dockerfile: prover.Dockerfile
     depends_on:
       - "risc0"
       - "halo2"

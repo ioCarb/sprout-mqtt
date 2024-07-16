@@ -38,10 +38,10 @@ var (
 
 func init() {
 	flag.IntVar(&logLevel, "logLevel", int(slog.LevelDebug), "golang slog level")
-	flag.UintVar(&aggregationAmount, "aggregationAmount", 1, "the amount for pack how many messages into one task")
+	flag.UintVar(&aggregationAmount, "aggregationAmount", 2, "the amount for pack how many messages into one task")
 	flag.StringVar(&address, "address", ":9000", "http listen address")
 	flag.StringVar(&coordinatorAddr, "coordinatorAddress", "localhost:9001", "coordinator address")
-	flag.StringVar(&broker, "mqttBroker", "mqtt://dev.w3bstream.com:1883", "MQTT broker address")
+	flag.StringVar(&broker, "broker", "mqtt://dev.w3bstream.com:1883", "MQTT broker address")
 	flag.StringVar(&mqttTopic, "mqttTopic", "device/messages", "MQTT topic")
 	flag.StringVar(&databaseDSN, "databaseDSN", "postgres://test_user:test_passwd@localhost:5432/test?sslmode=disable", "database dsn")
 	flag.StringVar(&privateKey, "privateKey", "dbfe03b0406549232b8dccc04be8224fcc0afa300a33d4f335dcfdfead861c85", "sequencer private key")

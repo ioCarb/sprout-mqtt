@@ -208,4 +208,4 @@ require (
 
 replace github.com/ethereum/go-ethereum => github.com/ethereum/go-ethereum v1.12.0
 
-replace github.com/machinefi/sprout => github.com/ioCarb/sprout v0.0.0
+//replace github.com/machinefi/sprout => github.com/ioCarb/sprout-mqtt v0.0.0
