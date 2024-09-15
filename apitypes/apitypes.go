@@ -16,13 +16,6 @@ type HandleMessageReq struct {
 	Data           string `json:"data"             binding:"required"`
 }
 
-type HandleMessageReqMqtt struct {
-	ProjectID      uint64 `json:"projectID"        binding:"required"`
-	ProjectVersion string `json:"projectVersion"   binding:"required"`
-	ClientID       string `json:"clientID"         binding:"required"`
-	Data           string `json:"data"             binding:"required"`
-}
-
 type HandleMessageRsp struct {
 	MessageID string `json:"messageID"`
 }

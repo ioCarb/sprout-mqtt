@@ -38,7 +38,7 @@ var (
 
 func init() {
 	flag.IntVar(&logLevel, "logLevel", int(slog.LevelDebug), "golang slog level")
-	flag.UintVar(&aggregationAmount, "aggregationAmount", 2, "the amount for pack how many messages into one task")
+	flag.UintVar(&aggregationAmount, "aggregationAmount", 2, "the amount of messages to be packed into one task")
 	flag.StringVar(&address, "address", ":9000", "http listen address")
 	flag.StringVar(&coordinatorAddr, "coordinatorAddress", "localhost:9001", "coordinator address")
 	flag.StringVar(&broker, "broker", "mqtt://dev.w3bstream.com:1883", "MQTT broker address")
